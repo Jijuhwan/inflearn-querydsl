@@ -14,6 +14,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.Commit;
 import org.springframework.transaction.annotation.Transactional;
 import study.querydsl.entity.Member;
 import study.querydsl.entity.QMember;
@@ -524,5 +525,80 @@ public class QuerydslBasicTest {
             System.out.println("age = " + age);
             System.out.println("username = " + username);
         }
+    }
+
+    @Test
+    public void bulkUpdate() throws Exception {
+
+        // member1 = 10 -> 비회원
+        // member2 = 20 -> 비회원
+        // member3 = 30 -> 유지
+        // member4 = 40 -> 유지
+
+        // BULK 연산은 영속성 컨텍스트를 무시하고 DB 쿼리를 날림.
+        // 아래와 같을 경우 영속성 컨텍스트와 DB가 차이가 생김.
+        long count = queryFactory
+                .update(member)
+                .set(member.username, "비회원")
+                .where(member.age.lt(28))
+                .execute();
+
+        em.flush();
+        em.clear();
+
+        List<Member> result = queryFactory
+                .selectFrom(member)
+                .fetch();
+
+        System.out.println("result = " + result);
+    }
+
+    @Test
+    public void bulkAdd() throws Exception {
+        queryFactory
+                .update(member)
+                .set(member.age, member.age.add(1))
+                .execute();
+    }
+
+    @Test
+    public void bulkDelete() throws Exception {
+        long count = queryFactory
+                .delete(member)
+                .where(member.age.gt(18))
+                .execute();
+    }
+
+    @Test
+    public void sqlFunction() throws Exception {
+        List<String> result = queryFactory
+                .select(
+                        Expressions.stringTemplate("function('replace', {0}, {1}, {2})",
+                                member.username, "member", "M"))
+                .from(member)
+                .fetch();
+
+        for (String s : result) {
+            System.out.println("s = " + s);
+        }
+    }
+
+    @Test
+    public void sqlFunction2() throws Exception {
+        List<String> resuilt = queryFactory
+                .select(member.username)
+                .from(member)
+//                .where(
+//                        member.username.eq(
+//                                Expressions.stringTemplate("function('lower', {0}", member.username)
+//                        )
+//                )
+                .where(member.username.eq(member.username.lower()))
+                .fetch();
+
+        for (String s : resuilt) {
+            System.out.println("s = " + s);
+        }
+
     }
 }
