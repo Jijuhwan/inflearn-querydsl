@@ -16,10 +16,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.Commit;
 import org.springframework.transaction.annotation.Transactional;
+import study.querydsl.dto.MemberSearchCondition;
+import study.querydsl.dto.MemberTeamDto;
 import study.querydsl.entity.Member;
 import study.querydsl.entity.QMember;
 import study.querydsl.entity.QTeam;
 import study.querydsl.entity.Team;
+import study.querydsl.repository.MemberJpaRepository;
 
 import java.util.List;
 
@@ -36,6 +39,9 @@ public class QuerydslBasicTest {
     EntityManager em;
 
     JPAQueryFactory queryFactory;   // 동시성 문제 X 잘 설계되어 있음. 멀티 스레드에 문제가 없게 분배해줌.
+
+    @Autowired
+    MemberJpaRepository memberJpaRepository;
 
 
     @BeforeEach
@@ -599,6 +605,16 @@ public class QuerydslBasicTest {
         for (String s : resuilt) {
             System.out.println("s = " + s);
         }
+    }
 
+    @Test
+    public void searchText() throws Exception {
+        MemberSearchCondition condition = new MemberSearchCondition();
+        condition.setAgeGoe(35);
+        condition.setAgeLoe(40);
+        condition.setTeamName("teamB");
+
+        List<MemberTeamDto> result = memberJpaRepository.search(condition);
+         assertThat(result).extracting("username").containsExactly("member4");
     }
 }
