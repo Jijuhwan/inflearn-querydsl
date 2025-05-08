@@ -6,10 +6,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.transaction.annotation.Transactional;
 import study.querydsl.dto.MemberSearchCondition;
 import study.querydsl.dto.MemberTeamDto;
 import study.querydsl.entity.Member;
+import study.querydsl.entity.QMember;
 import study.querydsl.entity.Team;
 
 import java.util.List;
@@ -44,30 +47,22 @@ class MemberRepositoryTest {
     }
 
     @Test
-    public void basicTest() throws Exception {
-        //given
-        Member member = new Member("member1", 10);
-        memberRepository.save(member);
+    public void searchPageSimple() throws Exception {
+        MemberSearchCondition condition = new MemberSearchCondition();
+        PageRequest pageRequest = PageRequest.of(0, 3);
 
-        //when
-        Member findMember = memberRepository.findById(member.getId()).get();
-        List<Member> result1 = memberRepository.findAll();
-        List<Member> result2 = memberRepository.findByUsername("member1");
-
-        //then
-        assertThat(findMember).isEqualTo(member);
-        assertThat(result1).containsExactly(member);
-        assertThat(result2).containsExactly(member);
+        Page<MemberTeamDto> result = memberRepository.searchPageSimple(condition, pageRequest);
+        assertThat(result.getSize()).isEqualTo(3);
+        assertThat(result.getContent()).extracting("username").containsExactly("member1","member2","member3");
     }
 
     @Test
-    public void searchText() throws Exception {
-        MemberSearchCondition condition = new MemberSearchCondition();
-        condition.setAgeGoe(35);
-        condition.setAgeLoe(40);
-        condition.setTeamName("teamB");
+    public void querydslPredicateExecutorTest() {
+        QMember member = QMember.member;
+        Iterable<Member> result = memberRepository.findAll(member.age.between(10, 40).and(member.username.eq("member1")));
 
-        List<MemberTeamDto> result = memberRepository.search(condition);
-        assertThat(result).extracting("username").containsExactly("member4");
+        for (Member findMember : result) {
+            System.out.println("findMember = " + findMember);
+        }
     }
 }
